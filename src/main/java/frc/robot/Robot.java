@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Joystick;
 
@@ -47,6 +49,8 @@ XboxController controller = new XboxController(1);
   WPI_TalonSRX graber = new WPI_TalonSRX(5);
   WPI_TalonSRX extender = new WPI_TalonSRX(6);
   Accelerometer accelerometer = new BuiltInAccelerometer();
+SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
+
 
   int state;
   Timer T = new Timer();
@@ -60,7 +64,7 @@ XboxController controller = new XboxController(1);
   private void PickupCube(boolean on)
   {
     if (on){
-       graber.set(-0.25);
+       graber.set(-0.6);
     }
     else {
       graber.set(0);
@@ -70,7 +74,7 @@ XboxController controller = new XboxController(1);
   {
 if (on)
 {
-  graber.set(0.25);
+  graber.set(0.35);
 }
 else
 {
@@ -86,7 +90,7 @@ else
   {
     if (on)
     {
-      extender.set(-0.25);
+      extender.set(-0.3);
     }
     else 
     {
@@ -97,7 +101,7 @@ else
   {
     if (on)
     {
-      extender.set(0.25);
+      extender.set(0.3);
     }
     else
     {
@@ -107,7 +111,7 @@ else
 
   private void backwards()
   {
-    m_drive.arcadeDrive(-0.5,0);
+    m_drive.arcadeDrive(-0.25,0);
   }
   private boolean iswall()
   {
@@ -143,6 +147,7 @@ else
     m_frontRight.setNeutralMode(NeutralMode.Brake);
     m_rearRight.setNeutralMode(NeutralMode.Brake);
     m_right.setInverted(true);
+    CameraServer.startAutomaticCapture();
   }
 
   /**
@@ -170,7 +175,7 @@ else
    */
   @Override
   public void autonomousInit() {
-    state = 100;
+    state = 2;
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
@@ -192,16 +197,19 @@ else
       case 2:
         m_drive.arcadeDrive(0,0);
         toss(true);
-        // if (isstoptoss())
-        // {
-        //   state = 3;
-        // }
+         if (T.get()>3)
+         {
+           T.reset();
+          state = 3;
+         }
       break;
       case 3:
-        forward();
-         if (accelerometer.getZ()<0.5)
+        backwards();
+        graber.set(0); 
+        
+        if (T.get()>5)
          {
-           state = 4;
+           state = 400;
          }
         
       break;
@@ -218,7 +226,9 @@ else
        balance(true);
       break;
       default:
-        // Put default auto code here
+        graber.set(0);
+        extender.set(0);
+        m_drive.arcadeDrive(0, 0);
         break;
         
     }
@@ -233,7 +243,12 @@ else
   public void teleopPeriodic() {
 
 
-    m_drive.arcadeDrive((Math.pow(-Joystick.getY(),3))*0.5, Math.pow(-Joystick.getTwist(),3)*0.5);
+    m_drive.arcadeDrive(
+      (Math.pow(
+        forwardfilter.calculate(
+          -Joystick.getY()),1)), 
+      Math.pow(
+        -Joystick.getTwist(),1)*0.5);
 
     if (controller.getYButton()){
     toss(false);
@@ -264,6 +279,7 @@ else
     else if (controller.getRightBumper()){
       out(false);
       in(true);
+      
     }
 
     else {
