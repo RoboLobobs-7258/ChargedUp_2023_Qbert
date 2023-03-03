@@ -60,6 +60,9 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
     SmartDashboard.putNumber("accelX", accelerometer.getX());
     SmartDashboard.putNumber("accely", accelerometer.getY());
     SmartDashboard.putNumber("accelz", accelerometer.getZ());
+    SmartDashboard.putNumber("position", m_rearLeft.getSelectedSensorPosition());
+    SmartDashboard.putNumber("ur timer", T.get());
+    SmartDashboard.putNumber("state", state);
   }
   private void PickupCube(boolean on)
   {
@@ -111,7 +114,7 @@ else
 
   private void backwards()
   {
-    m_drive.arcadeDrive(-0.25,0);
+    m_drive.arcadeDrive(-0.2,0);
   }
   private boolean iswall()
   {
@@ -175,7 +178,10 @@ else
    */
   @Override
   public void autonomousInit() {
-    state = 2;
+    state = 1;
+    T.reset();
+    T.start();
+    m_rearLeft.getSelectedSensorPosition();
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
@@ -187,38 +193,37 @@ else
     switch (state) 
     {
       case 1:
-        backwards();
-        if (iswall())
-        {
-          state = 2;
-          T.reset(); 
-        }
-        break;
-      case 2:
         m_drive.arcadeDrive(0,0);
         toss(true);
-         if (T.get()>3)
+         if (T.get()>2)
          {
-           T.reset();
-          state = 3;
+           m_rearLeft.setSelectedSensorPosition(0);
+          state = 2;
          }
       break;
-      case 3:
-        backwards();
-        graber.set(0); 
+      case 2:
+        m_drive.arcadeDrive(-0.4, 0);
         
-        if (T.get()>5)
+        graber.set(0);
+        
+        if (m_rearLeft.getSelectedSensorPosition()<-160000)
          {
-           state = 400;
+
+           state = 4;
          }
         
       break;
       case 4:
-      forward();
-      if (accelerometer.getZ()>0.9 && accelerometer.getZ()<1.1)
-      {
-        state = 5;
-      }
+    
+      m_drive.arcadeDrive(0.4, 0);
+        
+      graber.set(0);
+      
+      if (m_rearLeft.getSelectedSensorPosition()>-88000)
+       {
+
+         state = 500;
+       }
 
       break;
       case 5:
@@ -236,12 +241,14 @@ else
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    m_rearLeft.setSelectedSensorPosition(0);
+
+  }
 
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-
 
     m_drive.arcadeDrive(
       (Math.pow(
