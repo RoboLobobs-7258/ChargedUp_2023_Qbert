@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Joystick;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
@@ -63,6 +64,7 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
     SmartDashboard.putNumber("position", m_rearLeft.getSelectedSensorPosition());
     SmartDashboard.putNumber("ur timer", T.get());
     SmartDashboard.putNumber("state", state);
+    SmartDashboard.putNumber( "Extender distince",extender.getSelectedSensorPosition());
   }
   private void PickupCube(boolean on)
   {
@@ -93,22 +95,26 @@ else
   {
     if (on)
     {
-      extender.set(-0.3);
+      extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
     }
     else 
     {
-      extender.set(0);
+    //  extender.set(0);
     }
   }
   private void in(boolean on)
   {
     if (on)
     {
-      extender.set(0.3);
+    //  extender.set(ControlMode.MotionMagic,distiance_to_edge(1));
+      extender.set(ControlMode.MotionMagic,30000
+      );
     }
+    
+
     else
     {
-      extender.set(0);
+   //   extender.set(0);
     }
   }
 
@@ -136,6 +142,18 @@ else
     return false;
   }
   }
+  private double cs_extender_rpm = 2000;
+  private double cs_extender_motor = (cs_extender_rpm / 600) * 4096;
+  private double ac_extender_seconds = 1;
+  private double ac_extender = cs_extender_motor / ac_extender_seconds;
+  private double distiance_per_rev = 1;
+  private double gear_ratio = 3;
+private double distiance_to_edge(double distiance_inches)
+{
+  return distiance_inches * distiance_per_rev * gear_ratio * 4096;
+}
+
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -151,6 +169,15 @@ else
     m_rearRight.setNeutralMode(NeutralMode.Brake);
     m_right.setInverted(true);
     CameraServer.startAutomaticCapture();
+    extender.config_kP(0, .08, 0);
+    extender.config_kI(0, 0, 0);
+    extender.config_kD(0, 1, 0);
+    extender.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
+    extender.setSensorPhase(false);
+    extender.setSelectedSensorPosition(0);
+// TODO change start position code
+extender.configMotionCruiseVelocity(cs_extender_motor,30);
+extender.configMotionAcceleration(cs_extender_motor,30);
   }
 
   /**
@@ -320,3 +347,9 @@ else
 
   
 }
+
+
+
+
+
+
