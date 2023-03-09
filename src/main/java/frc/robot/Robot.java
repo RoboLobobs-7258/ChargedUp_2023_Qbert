@@ -95,7 +95,7 @@ else
   {
     if (on)
     {
-      extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
+      extender.set(ControlMode.MotionMagic,distiance_to_edge( 9));
     }
     else 
     {
@@ -107,7 +107,7 @@ else
     if (on)
     {
     //  extender.set(ControlMode.MotionMagic,distiance_to_edge(1));
-      extender.set(ControlMode.MotionMagic,30000
+      extender.set(ControlMode.MotionMagic,distiance_to_edge(5)
       );
     }
     
@@ -142,9 +142,9 @@ else
     return false;
   }
   }
-  private double cs_extender_rpm = 2000;
+  private double cs_extender_rpm = 6000;
   private double cs_extender_motor = (cs_extender_rpm / 600) * 4096;
-  private double ac_extender_seconds = 1;
+  private double ac_extender_seconds = .25;
   private double ac_extender = cs_extender_motor / ac_extender_seconds;
   private double distiance_per_rev = 1;
   private double gear_ratio = 3;
@@ -177,7 +177,7 @@ private double distiance_to_edge(double distiance_inches)
     extender.setSelectedSensorPosition(0);
 // TODO change start position code
 extender.configMotionCruiseVelocity(cs_extender_motor,30);
-extender.configMotionAcceleration(cs_extender_motor,30);
+extender.configMotionAcceleration(ac_extender,30);
   }
 
   /**
