@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.interfaces.Accelerometer;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.cameraserver.CameraServer;
@@ -21,7 +20,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
+
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
@@ -65,14 +64,17 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
     SmartDashboard.putNumber("ur timer", T.get());
     SmartDashboard.putNumber("state", state);
     SmartDashboard.putNumber( "Extender distince",extender.getSelectedSensorPosition());
+    
   }
   private void PickupCube(boolean on)
   {
     if (on){
-       graber.set(-0.6);
+      graber.set(-0.6);
+      extender.set(ControlMode.MotionMagic,distiance_to_edge( 9));
     }
     else {
       graber.set(0);
+      extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
     }
   }
   private void toss(boolean on)
@@ -80,10 +82,12 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
 if (on)
 {
   graber.set(0.35);
+  extender.set(ControlMode.MotionMagic,distiance_to_edge( 9));
 }
 else
 {
-  graber.set(0);
+graber.set(0);
+extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
 }
   }
   private void balance(boolean on)
@@ -148,6 +152,11 @@ else
   private double ac_extender = cs_extender_motor / ac_extender_seconds;
   private double distiance_per_rev = 1;
   private double gear_ratio = 3;
+  private double spintime;
+  private double overdistance;
+  private double overspeed;
+  private double balancedistance;
+  private double balancespeed;
 private double distiance_to_edge(double distiance_inches)
 {
   return distiance_inches * distiance_per_rev * gear_ratio * 4096;
@@ -178,6 +187,21 @@ private double distiance_to_edge(double distiance_inches)
 // TODO change start position code
 extender.configMotionCruiseVelocity(cs_extender_motor,30);
 extender.configMotionAcceleration(ac_extender,30);
+
+double value = SmartDashboard.getNumber("spintime", 2);
+SmartDashboard.putNumber("spintime", value);
+
+ value = SmartDashboard.getNumber("overdistance", -160000);
+SmartDashboard.putNumber("overdistance", value);
+
+ value = SmartDashboard.getNumber("overspeed", -.4);
+SmartDashboard.putNumber("overspeed", value);
+
+ value = SmartDashboard.getNumber("balencedistance", -88000);
+SmartDashboard.putNumber("balancedistance", value);
+
+ value = SmartDashboard.getNumber("balancespeed", .4);
+SmartDashboard.putNumber("balancespeed", value);
   }
 
   /**
@@ -212,6 +236,15 @@ extender.configMotionAcceleration(ac_extender,30);
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+ spintime = SmartDashboard.getNumber("spintime", 2);
+
+ overdistance = SmartDashboard.getNumber("overdistance", -160000);
+
+ overspeed = SmartDashboard.getNumber("overspeed", -.4);
+
+ balancedistance = SmartDashboard.getNumber("balencedistance", -88000);
+
+ balancespeed = SmartDashboard.getNumber("balancespeed", .4);
   }
 
   /** This function is called periodically during autonomous. */
@@ -221,32 +254,31 @@ extender.configMotionAcceleration(ac_extender,30);
     {
       case 1:
         m_drive.arcadeDrive(0,0);
-        toss(true);
-         if (T.get()>2)
+        graber.set(.35);
+         if (T.get()>spintime)
          {
            m_rearLeft.setSelectedSensorPosition(0);
           state = 2;
          }
       break;
       case 2:
-        m_drive.arcadeDrive(-0.4, 0);
+        m_drive.arcadeDrive(overspeed, 0);
         
         graber.set(0);
         
-        if (m_rearLeft.getSelectedSensorPosition()<-160000)
+        if (m_rearLeft.getSelectedSensorPosition()<overdistance)
          {
-
            state = 4;
          }
         
       break;
       case 4:
-    
-      m_drive.arcadeDrive(0.4, 0);
+      
+      m_drive.arcadeDrive(balancespeed, 0);
         
       graber.set(0);
       
-      if (m_rearLeft.getSelectedSensorPosition()>-88000)
+      if (m_rearLeft.getSelectedSensorPosition()>balancedistance)
        {
 
          state = 500;
@@ -259,7 +291,7 @@ extender.configMotionAcceleration(ac_extender,30);
       break;
       default:
         graber.set(0);
-        extender.set(0);
+       
         m_drive.arcadeDrive(0, 0);
         break;
         
@@ -307,18 +339,11 @@ extender.configMotionAcceleration(ac_extender,30);
     }
 
     if (controller.getLeftBumper()){
-      in(false);
-      out(true);
+      extender.set(-.5);
     }
     else if (controller.getRightBumper()){
-      out(false);
-      in(true);
+      extender.set(.5);
       
-    }
-
-    else {
-      out(false);
-      in(false);
     }
   }
   /** This function is called once when the robot is disabled. */
