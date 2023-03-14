@@ -197,7 +197,7 @@ SmartDashboard.putNumber("overdistance", value);
  value = SmartDashboard.getNumber("overspeed", -.4);
 SmartDashboard.putNumber("overspeed", value);
 
- value = SmartDashboard.getNumber("balencedistance", -88000);
+ value = SmartDashboard.getNumber("balancedistance", -88000);
 SmartDashboard.putNumber("balancedistance", value);
 
  value = SmartDashboard.getNumber("balancespeed", .4);
@@ -242,7 +242,7 @@ SmartDashboard.putNumber("balancespeed", value);
 
  overspeed = SmartDashboard.getNumber("overspeed", -.4);
 
- balancedistance = SmartDashboard.getNumber("balencedistance", -88000);
+ balancedistance = SmartDashboard.getNumber("balancedistance", -88000);
 
  balancespeed = SmartDashboard.getNumber("balancespeed", .4);
   }
