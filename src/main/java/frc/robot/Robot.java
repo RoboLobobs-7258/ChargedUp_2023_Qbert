@@ -66,35 +66,23 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
     SmartDashboard.putNumber( "Extender distince",extender.getSelectedSensorPosition());
     
   }
-  private void PickupCube(boolean on)
-  {
-    if (on){
-      graber.set(-0.6);
-      extender.set(ControlMode.MotionMagic,distiance_to_edge( 9));
-    }
-    else {
-      graber.set(0);
-      extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
-    }
-  }
-  private void toss(boolean on)
-  {
-if (on)
-{
-  graber.set(0.35);
-  extender.set(ControlMode.MotionMagic,distiance_to_edge( 9));
-}
-else
-{
-graber.set(0);
-extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
-}
-  }
-  private void balance(boolean on)
-  {
 
+  private void spinin() {
+    graber.set(-0.75);
+    
   }
-
+  private void spinout() {
+    graber.set(0.35);
+  }
+  private void spinstop() {
+    graber.set(0);
+  }
+  private void extenderin() {
+    extender.set(ControlMode.MotionMagic,distiance_to_edge(5));
+  }
+private void extenderout() {
+  extender.set(ControlMode.MotionMagic,distiance_to_edge(9));
+}
   private void out(boolean on)
   {
     if (on)
@@ -146,7 +134,7 @@ extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
     return false;
   }
   }
-  private double cs_extender_rpm = 6000;
+  private double cs_extender_rpm = 3000;
   private double cs_extender_motor = (cs_extender_rpm / 600) * 4096;
   private double ac_extender_seconds = .25;
   private double ac_extender = cs_extender_motor / ac_extender_seconds;
@@ -160,6 +148,9 @@ extender.set(ControlMode.MotionMagic,distiance_to_edge( 5));
 private double distiance_to_edge(double distiance_inches)
 {
   return distiance_inches * distiance_per_rev * gear_ratio * 4096;
+}
+private double wheel_distiance(double distiance_inches){
+  return distiance_inches / 18.84  * 8.07 * 2048; 
 }
 
 
@@ -191,13 +182,13 @@ extender.configMotionAcceleration(ac_extender,30);
 double value = SmartDashboard.getNumber("spintime", 2);
 SmartDashboard.putNumber("spintime", value);
 
- value = SmartDashboard.getNumber("overdistance", -160000);
+ value = SmartDashboard.getNumber("overdistance", -150000);
 SmartDashboard.putNumber("overdistance", value);
 
  value = SmartDashboard.getNumber("overspeed", -.4);
 SmartDashboard.putNumber("overspeed", value);
 
- value = SmartDashboard.getNumber("balancedistance", -88000);
+ value = SmartDashboard.getNumber("balancedistance", -103500);
 SmartDashboard.putNumber("balancedistance", value);
 
  value = SmartDashboard.getNumber("balancespeed", .4);
@@ -285,10 +276,6 @@ SmartDashboard.putNumber("balancespeed", value);
        }
 
       break;
-      case 5:
-       m_drive.arcadeDrive(0,0);
-       balance(true);
-      break;
       default:
         graber.set(0);
        
@@ -317,34 +304,29 @@ SmartDashboard.putNumber("balancespeed", value);
         -Joystick.getTwist(),1)*0.5);
 
     if (controller.getYButton()){
-    toss(false);
-      PickupCube(true);
+    spinin();
+    extenderout();
     }
     else if (controller.getAButton()){
-      PickupCube(false);
-      toss(true);
+    spinout();
+    extenderout();
+
     }
 
+    else if (controller.getLeftBumper()) { 
+      extender.set(-.4);
+
+    }
+    else if (controller.getRightBumper()) {
+      extender.set(.4);}
     else {
-    PickupCube(false);
-    toss(false);
+    spinstop();
+    extenderin();
     }
 
-    if (controller.getXButton()){
-      balance(true);
-    }
+    
 
-    else {
-      balance(false);
-    }
-
-    if (controller.getLeftBumper()){
-      extender.set(-.5);
-    }
-    else if (controller.getRightBumper()){
-      extender.set(.5);
-      
-    }
+   
   }
   /** This function is called once when the robot is disabled. */
   @Override
