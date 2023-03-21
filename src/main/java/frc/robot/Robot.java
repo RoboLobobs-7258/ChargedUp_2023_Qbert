@@ -17,6 +17,9 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Joystick;
 
+import java.time.OffsetDateTime;
+
+import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
@@ -55,6 +58,8 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
   int state;
   Timer T = new Timer();
 
+  boolean ishomed; 
+
   private void PrintDebug()
   {
     SmartDashboard.putNumber("accelX", accelerometer.getX());
@@ -83,6 +88,14 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
 private void extenderout() {
   extender.set(ControlMode.MotionMagic,distiance_to_edge(9));
 }
+  private void home(){
+    extender.set(-0.2);
+    if (extender.getSensorCollection().isRevLimitSwitchClosed()){
+      extender.setSelectedSensorPosition(0);
+      extender.configReverseSoftLimitEnable(true);
+      ishomed = true;
+    }
+  }
   private void out(boolean on)
   {
     if (on)
@@ -136,7 +149,7 @@ private void extenderout() {
   }
   private double cs_extender_rpm = 3000;
   private double cs_extender_motor = (cs_extender_rpm / 600) * 4096;
-  private double ac_extender_seconds = .25;
+  private double ac_extender_seconds = 1;
   private double ac_extender = cs_extender_motor / ac_extender_seconds;
   private double distiance_per_rev = 1;
   private double gear_ratio = 3;
@@ -169,31 +182,37 @@ private double wheel_distiance(double distiance_inches){
     m_rearRight.setNeutralMode(NeutralMode.Brake);
     m_right.setInverted(true);
     CameraServer.startAutomaticCapture();
+    extender.config_kF(0, .025, 0);
     extender.config_kP(0, .08, 0);
+    extender.configForwardSoftLimitEnable(true);
+    extender.configReverseSoftLimitEnable(false);
+    extender.configForwardSoftLimitThreshold(116736);
+    extender.configReverseSoftLimitThreshold(55300);
     extender.config_kI(0, 0, 0);
     extender.config_kD(0, 1, 0);
     extender.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
     extender.setSensorPhase(false);
     extender.setSelectedSensorPosition(0);
+    ishomed = false;
 // TODO change start position code
-extender.configMotionCruiseVelocity(cs_extender_motor,30);
-extender.configMotionAcceleration(ac_extender,30);
+    extender.configMotionCruiseVelocity(cs_extender_motor,30);
+    extender.configMotionAcceleration(ac_extender,30);
 
-double value = SmartDashboard.getNumber("spintime", 2);
-SmartDashboard.putNumber("spintime", value);
+    double value = SmartDashboard.getNumber("spintime", 2);
+    SmartDashboard.putNumber("spintime", value);
 
- value = SmartDashboard.getNumber("overdistance", -150000);
-SmartDashboard.putNumber("overdistance", value);
+    value = SmartDashboard.getNumber("overdistance", -150);
+    SmartDashboard.putNumber("overdistance", value);
 
- value = SmartDashboard.getNumber("overspeed", -.4);
-SmartDashboard.putNumber("overspeed", value);
+    value = SmartDashboard.getNumber("overspeed", -.4);
+    SmartDashboard.putNumber("overspeed", value);
 
- value = SmartDashboard.getNumber("balancedistance", -103500);
-SmartDashboard.putNumber("balancedistance", value);
+    value = SmartDashboard.getNumber("balancedistance", -79);
+    SmartDashboard.putNumber("balancedistance", value);
 
- value = SmartDashboard.getNumber("balancespeed", .4);
-SmartDashboard.putNumber("balancespeed", value);
-  }
+    value = SmartDashboard.getNumber("balancespeed", .4);
+    SmartDashboard.putNumber("balancespeed", value);
+      }
 
   /**
    * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
@@ -257,7 +276,8 @@ SmartDashboard.putNumber("balancespeed", value);
         
         graber.set(0);
         
-        if (m_rearLeft.getSelectedSensorPosition()<overdistance)
+        home();
+        if (m_rearLeft.getSelectedSensorPosition()<wheel_distiance(overdistance))
          {
            state = 4;
          }
@@ -269,7 +289,7 @@ SmartDashboard.putNumber("balancespeed", value);
         
       graber.set(0);
       
-      if (m_rearLeft.getSelectedSensorPosition()>balancedistance)
+      if (m_rearLeft.getSelectedSensorPosition()>wheel_distiance(balancedistance))
        {
 
          state = 500;
@@ -303,28 +323,32 @@ SmartDashboard.putNumber("balancespeed", value);
       Math.pow(
         -Joystick.getTwist(),1)*0.5);
 
-    if (controller.getYButton()){
-    spinin();
+    if (controller.getRightStickButton()){
+      home(); 
+    }
+
+    else if (controller.getYButton() && ishomed){
+  
+      spinin();
     extenderout();
     }
-    else if (controller.getAButton()){
+    else if (controller.getAButton() && ishomed){
     spinout();
     extenderout();
 
     }
 
-    else if (controller.getLeftBumper()) { 
-      extender.set(-.4);
+    else if (controller.getLeftBumper() && ishomed) { 
+      extender.set(-.2);
 
     }
-    else if (controller.getRightBumper()) {
-      extender.set(.4);}
+    else if (controller.getRightBumper() && ishomed) {
+      extender.set(.2);}
     else {
     spinstop();
     extenderin();
     }
 
-    
 
    
   }
