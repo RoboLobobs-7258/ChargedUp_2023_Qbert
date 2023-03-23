@@ -343,12 +343,14 @@ private double wheel_distiance(double distiance_inches){
 
     }
     else if (controller.getRightBumper() && ishomed) {
-      extender.set(.2);}
-    else {
+    extender.set(.2);}
+    else if (ishomed) {
     spinstop();
     extenderin();
     }
-
+    else {
+      spinstop();
+    }
 
    
   }
