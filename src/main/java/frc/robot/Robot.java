@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj.Joystick;
 
 import java.time.OffsetDateTime;
 
+import org.ejml.equation.Variable;
+
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
@@ -59,6 +61,7 @@ SlewRateLimiter forwardfilter = new SlewRateLimiter(2);
   Timer T = new Timer();
 
   boolean ishomed; 
+  boolean tehmax;
 
   private void PrintDebug()
   {
@@ -147,6 +150,7 @@ private void extenderout() {
     return false;
   }
   }
+  private double Yspeed;
   private double cs_extender_rpm = 3000;
   private double cs_extender_motor = (cs_extender_rpm / 600) * 4096;
   private double ac_extender_seconds = 1;
@@ -315,14 +319,21 @@ private double wheel_distiance(double distiance_inches){
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    if (Joystick.getTrigger()){
+      Yspeed = 0.5;
+    }
+    else {
+      Yspeed = 1;
+    }
 
     m_drive.arcadeDrive(
-      (Math.pow(
+    
+    
+    (Math.pow(
         forwardfilter.calculate(
-          -Joystick.getY()),1)), 
+          -Joystick.getY()),Yspeed)), 
       Math.pow(
         -Joystick.getTwist(),1)*0.5);
-
     if (controller.getRightStickButton()){
       home(); 
     }
@@ -351,9 +362,11 @@ private double wheel_distiance(double distiance_inches){
     else {
       spinstop();
     }
-
    
   }
+  private void set(double d) {
+  }
+
   /** This function is called once when the robot is disabled. */
   @Override
   public void disabledInit() {}
