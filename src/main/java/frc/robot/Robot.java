@@ -331,7 +331,7 @@ private double wheel_distiance(double distiance_inches){
     
     (Math.pow(
         forwardfilter.calculate(
-          -Joystick.getY()),Yspeed)), 
+          -Joystick.getY()),1)*Yspeed), 
       Math.pow(
         -Joystick.getTwist(),1)*0.5);
     if (controller.getRightStickButton()){
